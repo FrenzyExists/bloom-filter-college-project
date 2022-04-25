@@ -2,6 +2,7 @@ from math import log
 import sys
 import csv
 import numpy as np
+from re import search
 
 from bitarray import bitarray
 import mmh3
@@ -16,6 +17,16 @@ or whatever
 Fun fact: Taiwan is a country, now cry
 """
 
+# Exception raised for errors in a string path
+class InvalidPath(Exception):
+
+    def __init__(self, path, message="Path is not CSV"):
+        self.path = path
+        self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+            return f'{self.path} -> {self.message}'
 
 # n = number of elements to insert
 # f = the false positive rate
@@ -49,10 +60,19 @@ This will output a results.csv on the same dir as the script
     except:
         print("invalid path or file")
         exit()
-    return (data, data_tests)
-    # return (data, len(data), data_tests, len(data_tests))
 
-
+    try:
+        path = sys.argv[3]
+        if not search('(\w+)\.csv$', path):
+            raise InvalidPath(path)
+    except InvalidPath:
+        print("Path is not CSV")
+        exit()
+    except IndexError:
+        print("Using default")
+        path = 'Result.csv'
+    
+    return (data, data_tests, path)
 
 class BloomFilter(object):
     # size is the max num of elements in the filter
@@ -140,8 +160,7 @@ def main():
 
     new_data = combined_data(data[1], truth_array)
     fields = ['Email', 'Result'] 
-    filename = 'Results.csv'
-    with open(filename, 'w') as file:
+    with open(data[2], 'w') as file:
         # creating a csv writer object 
         csvwriter = csv.writer(file) 
 
