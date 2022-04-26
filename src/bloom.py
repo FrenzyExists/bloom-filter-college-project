@@ -1,9 +1,8 @@
 from math import log
-import sys
 import csv
+from sys import maxsize, argv
 import numpy as np
 from re import search
-
 from bitarray import bitarray
 import mmh3
 
@@ -28,15 +27,19 @@ class InvalidPath(Exception):
     def __str__(self):
             return f'{self.path} -> {self.message}'
 
+
+# Hash Function
+def mult_method(item: object, hash_size: int=maxsize, seed=0):
+    return (id(item) + seed**2) % hash_size + 1
+
+
 # n = number of elements to insert
 # f = the false positive rate
 # m = number of bits in a Bloom filter
-# k = number of hash functions
-
 def load_data():
-    if len(sys.argv) <= 1:
+    if len(argv) <= 1:
         print("""
-Usage: bloom [FILE/FOLDER]... [PARAMS]
+Usage: bloom [DATABASE-PATH] [CHECK-PATH] [FILENAME/PATH] (Optional) [FALSE-POSITIVE_VAL] (Optional)
 Basic bloom filter
 Example: ./bloom-filter db_input.csv db_check.csv
 This will output a results.csv on the same dir as the script
@@ -45,13 +48,13 @@ This will output a results.csv on the same dir as the script
 
     # first one are the input emails, the second one are the tests emails which represent the database
     try:
-        with open(sys.argv[1], 'r') as file:
+        with open(argv[1], 'r') as file:
             data_iter = csv.reader(file)    
             next(data_iter, None)  # skip the headers      
             i = [i for i in data_iter]
         data = np.array(i, dtype=str)
         
-        with open (sys.argv[2], 'r') as test_file:
+        with open (argv[2], 'r') as test_file:
             data_tester_iter = csv.reader(test_file)
             next(data_tester_iter, None)  # skip the headers      
             j = [j for j in data_tester_iter]
@@ -62,7 +65,7 @@ This will output a results.csv on the same dir as the script
         exit()
 
     try:
-        path = sys.argv[3]
+        path = argv[3]
         if not search('(\w+)\.csv$', path):
             raise InvalidPath(path)
     except InvalidPath:
@@ -72,7 +75,12 @@ This will output a results.csv on the same dir as the script
         print("Using default")
         path = 'Result.csv'
     
-    return (data, data_tests, path)
+    try:
+        fp_rate = float(argv[4])
+        print(type(fp_rate))
+    except IndexError:
+        fp_rate = 0.005 # given on rubric
+    return (data, data_tests, path, fp_rate)
 
 class BloomFilter(object):
     # size is the max num of elements in the filter
@@ -141,14 +149,13 @@ def main():
     data = load_data()
 
     # Hard coded values
-    false_positive = 0.005 # given on rubric
     data_set_length = len(data[0])
     check_set_length = len(data[1])
 
     print(f"""Data sizes: 
         check size = {check_set_length}, input size = {data_set_length}""")
 
-    Filter = BloomFilter(data_set_length, false_positive)
+    Filter = BloomFilter(data_set_length, data[3])
     Filter.add_array(data[0])    
 
     truth_array = [] 
