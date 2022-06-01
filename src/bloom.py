@@ -112,6 +112,7 @@ class BloomFilter(object):
         for seed in range(self.__hash_count):
             index = mmh3.hash(item, seed) % self.__bit_size
             self.bit_array[index] = 1
+            print(f"The index is {index} and the item is {item}")
  
     def check(self, item):
         for seed in range(self.__hash_count):
@@ -134,7 +135,8 @@ class BloomFilter(object):
 
     def check(self, item):
         for i in range(self.__hash_count):
-            index = mmh3.hash(item, i) % self.__bit_size
+            index = mmh3.hash(item[0], i) % self.__bit_size
+            print(f"Index {index} bit {self.bit_array[index]} {item}")
             if self.bit_array[index] == 0:
                 return False
         return True
@@ -159,6 +161,7 @@ def main():
     Filter.add_array(data[0])    
 
     truth_array = [] 
+    Filter.print_calculated_params()
     for row in data[1]:
         if Filter.check(row):
             truth_array.append('Probably in the DB')
